@@ -17,7 +17,7 @@ import com.google.android.gms.vision.Detector;
 import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.gms.vision.barcode.BarcodeDetector;
 import com.google.gson.Gson;
-import com.token.model.QRCodeData;
+import com.token.model.Data;
 import com.token.util.Constants;
 
 import java.io.IOException;
@@ -36,12 +36,13 @@ public class ScannerBarcodeActivity extends AppCompatActivity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scan_barcode);
+        this.setTitle(R.string.reading);
         initViews();
     }
 
     private void initViews() {
-        txtBarcodeValue = findViewById(R.id.txtBarcodeValue);
-        surfaceView = findViewById(R.id.surfaceView);
+        txtBarcodeValue = findViewById(R.id.txt_barcode_value);
+        surfaceView = findViewById(R.id.surface_view);
     }
 
     private void initialiseDetectorsAndSources() {
@@ -54,7 +55,7 @@ public class ScannerBarcodeActivity extends AppCompatActivity{
 
         cameraSource = new CameraSource.Builder(this, barcodeDetector)
                 .setRequestedPreviewSize(1920, 1080)
-                .setAutoFocusEnabled(true) //you should add this feature
+                .setAutoFocusEnabled(true)
                 .build();
 
         surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
@@ -99,11 +100,11 @@ public class ScannerBarcodeActivity extends AppCompatActivity{
                         public void run() {
                             intentData = barcodes.valueAt(0).displayValue;
                             try{
-                                QRCodeData qrCodeData = gson.fromJson(intentData,QRCodeData.class);
+                                Data qrCodeData = gson.fromJson(intentData,Data.class);
                                 Intent i = new Intent();
-                                txtBarcodeValue.setText(getString(R.string.qr_code_accepted));
                                 i.putExtra(Constants.DATA_STRING_QR_CODE, qrCodeData);
                                 setResult(RESULT_OK, i);
+                                txtBarcodeValue.setText(getString(R.string.qr_code_accepted));
                                 txtBarcodeValue.removeCallbacks(null);
                                 finish();
                             }catch (Exception e){
