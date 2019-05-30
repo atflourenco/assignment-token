@@ -9,42 +9,72 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.token.model.QRCodeData;
+import com.token.database.AppDatabase;
+import com.token.model.Data;
 import com.token.util.Constants;
+
+import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
-    // Used to load the 'native-lib' library on application startup.
+    public native byte[] generateOtp(String key);
+
     static {
-        System.loadLibrary("native-lib");
+        System.loadLibrary("otpjni");
     }
     private Button btnScanKey;
+    private Button btnDeleteData;
+    private TextView tvFriendlyName;
+    private TextView tvOtp;
+    private AppDatabase db;
+    private Boolean isVisible = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        // Example of a call to a native method
-        TextView tv = findViewById(R.id.sample_text);
-        tv.setText(stringFromJNI());
         this.initViews();
+        this.checkDatabase();
     }
     private void initViews() {
+        tvFriendlyName = findViewById(R.id.txt_friendly);
+        tvOtp = findViewById(R.id.txt_otp);
         btnScanKey = findViewById(R.id.btn_get_key);
+        btnDeleteData = findViewById(R.id.btn_delete);
         btnScanKey.setOnClickListener(this);
+        btnDeleteData.setOnClickListener(this);
     }
-    /**
-     * A native method that is implemented by the 'native-lib' native library,
-     * which is packaged with this application.
-     */
-    public native String stringFromJNI();
+
+    private void checkDatabase(){
+        db = AppDatabase.getAppDatabase(this);
+        Data data  = db.dataDao().getData();
+        if(data!=null){
+            btnScanKey.setVisibility(View.INVISIBLE);
+            setDataVisible(data.getLabel(),getOtpValue(data.getKey()));
+        }else{
+            tvFriendlyName.setText(R.string.click_get_key);
+            tvOtp.setText("");
+            tvOtp.setVisibility(View.INVISIBLE);
+            btnScanKey.setVisibility(View.VISIBLE);
+            btnDeleteData.setVisibility(View.INVISIBLE);
+        }
+    }
 
     @Override
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.btn_get_key:{
                 startActivityForResult(new Intent(MainActivity.this, ScannerBarcodeActivity.class), Constants.REQUEST_CODE_SCAN);
+            }break;
+            case R.id.btn_delete:{
+                AppDatabase db = AppDatabase.getAppDatabase(this);
+                        db.dataDao().deleteAll();
+                btnScanKey.setVisibility(View.VISIBLE);
+                tvFriendlyName.setText(R.string.click_get_key);
+
+                tvOtp.setText("");
+                tvOtp.setVisibility(View.INVISIBLE);
+                btnDeleteData.setVisibility(View.INVISIBLE);
             }break;
         }
     }
@@ -53,10 +83,71 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode==Constants.REQUEST_CODE_SCAN && resultCode==RESULT_OK){
-            QRCodeData qrCodeData = (QRCodeData) data.getSerializableExtra(Constants.DATA_STRING_QR_CODE);
-            Toast.makeText(getApplicationContext(),qrCodeData.toString(),Toast.LENGTH_LONG).show();
+            Data qrCodeData = (Data) data.getSerializableExtra(Constants.DATA_STRING_QR_CODE);
+            Data d = new Data(qrCodeData.getKey(),qrCodeData.getLabel());
+            db.dataDao().insert(d);
+            btnDeleteData.setVisibility(View.VISIBLE);
+            btnScanKey.setVisibility(View.INVISIBLE);
+            setDataVisible(qrCodeData.getLabel(),qrCodeData.getKey());
         }else{
-            Toast.makeText(getApplicationContext(),R.string.reader_canceled,Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(),R.string.read_cancelled,Toast.LENGTH_SHORT).show();
         }
     }
+
+    private void setDataVisible(String label, String key){
+        tvFriendlyName.setVisibility(View.VISIBLE);
+        tvFriendlyName.setText(label);
+        tvOtp.setVisibility(View.VISIBLE);
+        tvOtp.setText(getOtpValue(key));
+    }
+
+    private String getOtpValue(String key){
+        byte[] otpGenerated = generateOtp(key);
+        String str = String.format("%02x",otpGenerated[10]&0x7F);
+        str += String.format("%02x",otpGenerated[11]);
+        str += String.format("%02x",otpGenerated[12]);
+        str += String.format("%02x",otpGenerated[13]);
+        Long v = Long.parseLong(str.toUpperCase(),16);
+        return String.format("%010d",v).substring(4);
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        isVisible = true;
+        this.updateOtp();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        isVisible = false;
+    }
+
+    private void updateOtp(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while(isVisible){
+                    if(tvOtp.getVisibility()==View.VISIBLE){
+                        Calendar calendar = Calendar.getInstance();
+                        if(calendar.get(Calendar.SECOND)==0
+                                || calendar.get(Calendar.SECOND)==30){
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    checkDatabase();
+                                }
+                            });
+                        }
+                        try {
+                            Thread.sleep(Constants.ONE_SECOND);
+                        }catch (Exception e){}
+                    }
+                }
+            }
+        }).start();
+    }
+
 }
