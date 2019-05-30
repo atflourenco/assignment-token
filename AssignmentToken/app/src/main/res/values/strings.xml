@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">AssignmentToken</string>
+    <string name="app_name">Token</string>
     <string name="get_key">Get Key</string>
     <string name="no_barcode_detected">No Barcode Detected</string>
     <string name="confirm">Confirm</string>
@@ -7,5 +7,7 @@
     <string name="delete_data">Delete data</string>
     <string name="qr_code_invalid">QRCode invalid</string>
     <string name="qr_code_accepted">QRCode accepted</string>
-    <string name="reader_canceled">Reader cancelled</string>
+    <string name="read_cancelled">Read cancelled</string>
+    <string name="reading">Reading</string>
+    <string name="click_get_key">Click Get Key to Generate an OTP</string>
 </resources>
