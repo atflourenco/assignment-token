@@ -10,4 +10,5 @@
     <string name="read_cancelled">Read cancelled</string>
     <string name="reading">Reading</string>
     <string name="click_get_key">Click Get Key to Generate an OTP</string>
+    <string name="request_denied">Permission denied to use your camera</string>
 </resources>

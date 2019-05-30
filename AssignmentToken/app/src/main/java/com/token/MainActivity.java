@@ -1,7 +1,10 @@
 package com.token;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -13,6 +16,7 @@ import com.token.database.AppDatabase;
 import com.token.model.Data;
 import com.token.util.Constants;
 
+import java.io.IOException;
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
@@ -64,7 +68,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.btn_get_key:{
-                startActivityForResult(new Intent(MainActivity.this, ScannerBarcodeActivity.class), Constants.REQUEST_CODE_SCAN);
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                        == PackageManager.PERMISSION_GRANTED) {
+                        startActivityForResult(new Intent(MainActivity.this, ScannerBarcodeActivity.class), Constants.REQUEST_CODE_SCAN);
+                } else {
+                    ActivityCompat.requestPermissions(this, new
+                            String[]{Manifest.permission.CAMERA}, Constants.REQUEST_CAMERA_PERMISSION);
+                    return;
+                }
             }break;
             case R.id.btn_delete:{
                 AppDatabase db = AppDatabase.getAppDatabase(this);
@@ -124,7 +135,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onStop();
         isVisible = false;
     }
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case Constants.REQUEST_CAMERA_PERMISSION: {
 
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    startActivityForResult(new Intent(MainActivity.this, ScannerBarcodeActivity.class), Constants.REQUEST_CODE_SCAN);
+                } else {
+                    Toast.makeText(this, getString(R.string.request_denied),
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+    }
     private void updateOtp(){
         new Thread(new Runnable() {
             @Override

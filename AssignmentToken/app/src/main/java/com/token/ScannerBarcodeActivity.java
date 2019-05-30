@@ -66,11 +66,11 @@ public class ScannerBarcodeActivity extends AppCompatActivity{
                             == PackageManager.PERMISSION_GRANTED) {
                         cameraSource.start(surfaceView.getHolder());
                     } else {
-                        ActivityCompat.requestPermissions(ScannerBarcodeActivity.this, new
-                                String[]{Manifest.permission.CAMERA}, Constants.REQUEST_CAMERA_PERMISSION);
+                        finish();
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
+                    finish();
                 }
             }
 
