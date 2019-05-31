@@ -1,22 +1,23 @@
 package com.token;
 
 import android.Manifest;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.token.database.AppDatabase;
 import com.token.model.Data;
 import com.token.util.Constants;
-
-import java.io.IOException;
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
@@ -32,6 +33,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView tvOtp;
     private AppDatabase db;
     private Boolean isVisible = true;
+    private Boolean updatePassword = false;
+    private String password = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +57,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Data data  = db.dataDao().getData();
         if(data!=null){
             btnScanKey.setVisibility(View.INVISIBLE);
-            setDataVisible(data.getLabel(),getOtpValue(data.getKey()));
+            tvFriendlyName.setVisibility(View.INVISIBLE);
+            tvOtp.setVisibility(View.INVISIBLE);
+            this.showInputPassword();
         }else{
             tvFriendlyName.setText(R.string.click_get_key);
             tvOtp.setText("");
@@ -79,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }break;
             case R.id.btn_delete:{
                 AppDatabase db = AppDatabase.getAppDatabase(this);
-                        db.dataDao().deleteAll();
+                db.dataDao().deleteAll();
                 btnScanKey.setVisibility(View.VISIBLE);
                 tvFriendlyName.setText(R.string.click_get_key);
 
@@ -95,11 +100,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode==Constants.REQUEST_CODE_SCAN && resultCode==RESULT_OK){
             Data qrCodeData = (Data) data.getSerializableExtra(Constants.DATA_STRING_QR_CODE);
-            Data d = new Data(qrCodeData.getKey(),qrCodeData.getLabel());
+            Data d = new Data(qrCodeData.getKey(),qrCodeData.getLabel(),password);
             db.dataDao().insert(d);
             btnDeleteData.setVisibility(View.VISIBLE);
             btnScanKey.setVisibility(View.INVISIBLE);
-            setDataVisible(qrCodeData.getLabel(),qrCodeData.getKey());
+            tvOtp.setVisibility(View.INVISIBLE);
+            tvOtp.setVisibility(View.VISIBLE);
+            updatePassword = true;
+            showInputPassword();
         }else{
             Toast.makeText(getApplicationContext(),R.string.read_cancelled,Toast.LENGTH_SHORT).show();
         }
@@ -167,13 +175,52 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 }
                             });
                         }
-                        try {
-                            Thread.sleep(Constants.ONE_SECOND);
-                        }catch (Exception e){}
                     }
+                    try {
+                        Thread.sleep(Constants.ONE_SECOND);
+                    }catch (Exception e){}
                 }
             }
         }).start();
     }
 
+    private void showInputPassword(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(R.string.type_password);
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        builder.setView(input);
+        builder.setCancelable(false);
+        builder.setPositiveButton(R.string.text_ok, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                password = input.getText().toString();
+                if(updatePassword){
+                    Data d = db.dataDao().getData();
+                    d.setPassword(password);
+                    db.dataDao().update(d);
+                    setDataVisible(d.getLabel(),getOtpValue(d.getKey()));
+                    updatePassword = false;
+                }else{
+                    Data d = db.dataDao().getData();
+                    if(!d.getPassword().equals(password)){
+                        Toast.makeText(MainActivity.this,R.string.invalid_password,Toast.LENGTH_SHORT).show();
+                        finish();
+                    }else{
+                        btnDeleteData.setVisibility(View.VISIBLE);
+                        btnScanKey.setVisibility(View.INVISIBLE);
+                        setDataVisible(d.getLabel(),d.getKey());
+                    }
+                }
+            }
+        });
+        builder.setNegativeButton(R.string.text_cancel, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+                finish();
+            }
+        });
+        builder.show();
+    }
 }
