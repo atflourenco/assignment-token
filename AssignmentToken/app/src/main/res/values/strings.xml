@@ -11,4 +11,8 @@
     <string name="reading">Reading</string>
     <string name="click_get_key">Click Get Key to Generate an OTP</string>
     <string name="request_denied">Permission denied to use your camera</string>
+    <string name="text_ok">OK</string>
+    <string name="text_cancel">Cancel</string>
+    <string name="type_password">Type a password</string>
+    <string name="invalid_password">Invalid password</string>
 </resources>
