@@ -3,6 +3,7 @@ package com.token.dao;
 import android.arch.persistence.room.Dao;
 import android.arch.persistence.room.Insert;
 import android.arch.persistence.room.Query;
+import android.arch.persistence.room.Update;
 
 import com.token.model.Data;
 
@@ -12,6 +13,9 @@ public interface DataDao {
     @Insert
     void insert(Data data);
 
+    @Update
+    void update(Data data);
+    
     @Query("DELETE FROM data_user")
     void deleteAll();
 
