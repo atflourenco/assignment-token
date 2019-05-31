@@ -17,6 +17,14 @@ public class Data implements Serializable {
     @ColumnInfo(name = "label")
     private String label;
 
+    @ColumnInfo(name = "password")
+    private String password;
+
+    public Data(@NonNull String key, String label, String password) {
+        this.key = key;
+        this.label = label;
+        this.password = password;
+    }
 
     public String getKey() {
         return key;
@@ -34,8 +42,11 @@ public class Data implements Serializable {
         this.label = label;
     }
 
-    public Data(String key, String label) {
-        this.key = key;
-        this.label = label;
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }

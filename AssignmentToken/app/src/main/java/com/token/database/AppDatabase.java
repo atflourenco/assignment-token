@@ -8,7 +8,7 @@ import android.content.Context;
 import com.token.dao.DataDao;
 import com.token.model.Data;
 
-@Database(entities = {Data.class}, version = 1)
+@Database(entities = {Data.class}, version = 1, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract DataDao dataDao();
 
